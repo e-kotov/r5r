@@ -72,7 +72,7 @@ setup_r5 <- function(data_path,
 
   # check Java version installed locally ---------------------------------------
 
-  # rJava::.jinit()
+  rJava::.jinit()
   # ver <- rJava::.jcall("java.lang.System", "S", "getProperty", "java.version")
   # ver <- as.numeric(gsub("\\..*", "", ver))
   # if (ver != 21) {
