@@ -72,18 +72,18 @@ setup_r5 <- function(data_path,
 
   # check Java version installed locally ---------------------------------------
 
-  rJava::.jinit()
-  ver <- rJava::.jcall("java.lang.System", "S", "getProperty", "java.version")
-  ver <- as.numeric(gsub("\\..*", "", ver))
-  if (ver != 21) {
-    stop(
-      "This package requires the Java SE Development Kit 21.\n",
-      "Please update your Java installation. ",
-      "The jdk 21 can be downloaded from either:\n",
-      "  - openjdk: https://jdk.java.net/java-se-ri/21\n",
-      "  - oracle: https://docs.oracle.com/en/java/javase/21/install/index.html"
-    )
-  }
+  # rJava::.jinit()
+  # ver <- rJava::.jcall("java.lang.System", "S", "getProperty", "java.version")
+  # ver <- as.numeric(gsub("\\..*", "", ver))
+  # if (ver != 21) {
+  #   stop(
+  #     "This package requires the Java SE Development Kit 21.\n",
+  #     "Please update your Java installation. ",
+  #     "The jdk 21 can be downloaded from either:\n",
+  #     "  - openjdk: https://jdk.java.net/java-se-ri/21\n",
+  #     "  - oracle: https://docs.oracle.com/en/java/javase/21/install/index.html"
+  #   )
+  # }
 
   # expand data_path to full path, as required by rJava api call
   data_path <- path.expand(data_path)
