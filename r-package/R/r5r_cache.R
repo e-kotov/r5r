@@ -21,23 +21,26 @@
 #' # delete r5 JAR
 #' r5r_cache(delete_file = 'r5-v7.0')
 #'
-r5r_cache <- function(list_files = TRUE,
-                      delete_file = NULL){
-
+r5r_cache <- function(list_files = TRUE, delete_file = NULL) {
   # check inputs
   checkmate::assert_logical(list_files)
   checkmate::assert_character(delete_file, null.ok = TRUE)
 
   # find / create local dir
-  if (!dir.exists(r5r_env$cache_dir)) { dir.create(r5r_env$cache_dir, recursive=TRUE) }
+  if (!dir.exists(r5r_env$cache_dir)) {
+    dir.create(r5r_env$cache_dir, recursive = TRUE)
+  }
 
   # list cached files
-  files <- list.files(dirname(r5r_env$cache_dir), full.names = TRUE, recursive = TRUE)
+  files <- list.files(
+    dirname(r5r_env$cache_dir),
+    full.names = TRUE,
+    recursive = TRUE
+  )
 
   # if wants to delete file
   # delete_file = "r5-v7.0-all.jar"
   if (!is.null(delete_file)) {
-
     # IF file does not exist, print message
     if (!any(grepl(delete_file, files)) & delete_file != "all") {
       message(paste0("The file '", delete_file, "' is not cached."))
@@ -51,13 +54,11 @@ r5r_cache <- function(list_files = TRUE,
     }
 
     # Delete ALL file
-    if (delete_file=='all') {
-
+    if (delete_file == 'all') {
       # delete any files from censobr, current and old data releases
       dir_above <- dirname(r5r_env$cache_dir)
       unlink(dir_above, recursive = TRUE, force = TRUE)
       message(paste0("All files have been removed."))
-
     }
   }
 
@@ -65,9 +66,36 @@ r5r_cache <- function(list_files = TRUE,
   files <- list.files(r5r_env$cache_dir, full.names = TRUE)
 
   # print file names
-  if(isTRUE(list_files)){
+  if (isTRUE(list_files)) {
     message('Files currently chached:')
     message(paste0(files, collapse = '\n'))
   }
 }
 
+#' Change the r5r cache directory
+#'
+#' @param path Character. Path to the new cache directory.
+#' @param move Logical. If TRUE, move existing cached files from the old
+#'        cache directory into the new one. Defaults to FALSE.
+#' @return Invisibly, the new cache directory path.
+#' @export
+r5r_set_cache_dir <- function(path, move = FALSE) {
+  path <- path.expand(path)
+  if (!dir.exists(path)) dir.create(path, recursive = TRUE)
+
+  # ensure r5r namespace is loaded
+  if (!"r5r" %in% loadedNamespaces()) loadNamespace("r5r")
+  env <- getFromNamespace("r5r_env", "r5r")
+
+  # optionally move old files
+  if (move && dir.exists(env$cache_dir)) {
+    old <- env$cache_dir
+    files <- list.files(old, full.names = TRUE)
+    file.copy(files, path, recursive = TRUE)
+    unlink(old, recursive = TRUE, force = TRUE)
+  }
+
+  env$cache_dir <- path
+  message("r5r cache directory is now: ", path)
+  invisible(path)
+}
