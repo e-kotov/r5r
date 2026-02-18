@@ -1,0 +1,9 @@
+# ignore HTML
+*.html linguist-detectable=false
+
+# Interpret .rmd as R
+*.Rmd linguist-language=R
+
+# Avoid merge conflicts in little jar
+r-package/inst/jar/r5r.jar merge=ours
+r-package/inst/jar/r5r.jar binary
