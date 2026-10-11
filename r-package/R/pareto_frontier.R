@@ -3,6 +3,7 @@
 #' Fast computation of travel time and monetary cost Pareto frontier between
 #' origin and destination pairs.
 #'
+#' @template monte_carlo_seed
 #' @template r5r_network
 #' @template r5r_core
 #' @template common_arguments
@@ -107,6 +108,8 @@ pareto_frontier <- function(r5r_network,
                             verbose = FALSE,
                             progress = FALSE,
                             output_dir = NULL,
+                            random_seed = NULL,
+                            lock_schedules = FALSE,
                             r5r_core = deprecated()) {
 
   # deprecating r5r_core --------------------------------------
@@ -186,6 +189,7 @@ pareto_frontier <- function(r5r_network,
   set_time_window(r5r_network, time_window)
   set_percentiles(r5r_network, percentiles)
   set_monte_carlo_draws(r5r_network, 1, time_window)
+  set_monte_carlo_seed(r5r_network, random_seed, lock_schedules)
   set_speed(r5r_network, walk_speed, "walk")
   set_speed(r5r_network, bike_speed, "bike")
   set_max_rides(r5r_network, max_rides)

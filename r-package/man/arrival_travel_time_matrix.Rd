@@ -29,6 +29,8 @@ arrival_travel_time_matrix(
   verbose = FALSE,
   progress = FALSE,
   output_dir = NULL,
+  random_seed = NULL,
+  lock_schedules = FALSE,
   r5r_core = deprecated()
 )
 }
@@ -147,6 +149,23 @@ directory. When a path is given, the function writes the results as
 \code{.csv} files to that directory and returns the path instead of the
 results. Useful in memory-constrained settings, as results are not
 loaded into RAM. Missing values (\code{NA}) are written as empty fields.}
+
+\item{random_seed}{A whole number between -2147483647 and 2147483647, or
+\code{NULL} (the default). Sets the R5 random seed for Monte Carlo frequency
+schedules and departure-time sampling. The same seed reproduces the draws
+with the same inputs and R5 version; it takes precedence over
+\code{lock_schedules}. Each origin uses this seed independently. This controls
+Java's RNG, independently of R's \code{set.seed()}. Requires an R5 JAR with
+\code{randomSeed} and \code{lockSchedules} support, selected with
+\code{options(r5r.r5jar = "path/to/r5.jar")} before starting Java. The default
+preserves R5's existing behavior. Output row order and the ordering of
+equivalent itineraries may vary. Expanded and arrival matrices order
+paths deterministically when either seed control is enabled.}
+
+\item{lock_schedules}{A logical. Defaults to \code{FALSE}. When \code{TRUE} and
+\code{random_seed} is \code{NULL}, R5 derives the seed from the origin latitude to
+reproduce frequency schedules. Requires the same seed-supporting R5 JAR
+as \code{random_seed}. These settings apply only to the current call.}
 
 \item{r5r_core}{The \code{r5r_core} argument is deprecated as of r5r v2.3.0.
 Use the \code{r5r_network} argument instead.}

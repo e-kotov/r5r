@@ -1,6 +1,7 @@
 package org.ipea.r5r.Network;
 
 import com.conveyal.kryo.InstanceCountingClassResolver;
+import com.conveyal.r5.kryo.KryoNetworkSerializer;
 import com.conveyal.kryo.TIntArrayListSerializer;
 import com.conveyal.kryo.TIntIntHashMapSerializer;
 import com.esotericsoftware.kryo.Kryo;
@@ -25,7 +26,16 @@ public class NetworkChecker {
      * This string should be changed to a new value each time the network storage format changes.
      * I considered using an ISO date string but that could get confusing when seen in filenames.
      */
-    public static final String NETWORK_FORMAT_VERSION = "nv4";
+    public static final String NETWORK_FORMAT_VERSION = networkFormatVersion();
+
+    private static String networkFormatVersion() {
+        try {
+            // Read at runtime: javac would inline a direct reference from the build-time R5.
+            return (String) KryoNetworkSerializer.class.getField("NETWORK_FORMAT_VERSION").get(null);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Cannot read the R5 network format version.", e);
+        }
+    }
 
     public static final byte[] HEADER = "R5NETWORK".getBytes();
 

@@ -709,3 +709,20 @@ set_new_lts <- function(r5r_network, new_lts) {
     }
   }
 }
+
+
+# Set fork-supported Monte Carlo controls; defaults preserve stock R5 behavior.
+set_monte_carlo_seed <- function(r5r_network, random_seed, lock_schedules) {
+  checkmate::assert_flag(lock_schedules)
+  if (!is.null(random_seed)) {
+    checkmate::assert_number(random_seed, finite = TRUE,
+                             lower = -.Machine$integer.max,
+                             upper = .Machine$integer.max)
+    if (random_seed != trunc(random_seed)) {
+      stop("random_seed must be a whole number.")
+    }
+  }
+  r5r_network$setMonteCarloSeed(lock_schedules, !is.null(random_seed),
+                              if (is.null(random_seed)) 0L else as.integer(random_seed))
+  return(invisible(TRUE))
+}

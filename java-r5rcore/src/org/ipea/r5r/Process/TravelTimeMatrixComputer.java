@@ -1,5 +1,7 @@
 package org.ipea.r5r.Process;
 
+import org.ipea.r5r.Utils.R5Compatibility;
+
 import com.conveyal.analysis.models.CsvResultOptions;
 import com.conveyal.r5.OneOriginResult;
 import com.conveyal.r5.analyst.TravelTimeComputer;
@@ -177,6 +179,22 @@ public class TravelTimeMatrixComputer extends R5DataFrameProcess {
         }
     }
 
+    private Collection<PathBreakdown> orderedPaths(Collection<PathBreakdown> paths) {
+        if (routingProperties.randomSeed == null && !routingProperties.lockSchedules) return paths;
+        // R5 groups paths in hash maps. Stable draws alone do not stabilize draw labels
+        // or the first eligible arrival path selected from these collections.
+        List<PathBreakdown> ordered = new ArrayList<>(paths);
+        ordered.sort(Comparator.comparingDouble((PathBreakdown p) -> p.totalTime)
+                .thenComparing(p -> p.routes)
+                .thenComparingInt(p -> p.nRides)
+                .thenComparingDouble(p -> p.accessTime)
+                .thenComparingDouble(p -> p.waitTime)
+                .thenComparingDouble(p -> p.rideTime)
+                .thenComparingDouble(p -> p.transferTime)
+                .thenComparingDouble(p -> p.egressTime));
+        return ordered;
+    }
+
     private void filterLatestBeforeArrivalTime(RDataFrame travelTimesTable, Multimap<Integer, PathBreakdown>[] pathBreakdown, int destination) {
         if (this.routingProperties.expandedTravelTimes & pathBreakdown != null) {
             if (!pathBreakdown[destination].isEmpty()) {
@@ -186,7 +204,7 @@ public class TravelTimeMatrixComputer extends R5DataFrameProcess {
                 for (int departureTime = secondsFromMidnight + (routingProperties.timeWindowSize - 1) * 60;
                      departureTime >= secondsFromMidnight;
                      departureTime -= 60) {
-                    Collection<PathBreakdown> pbs = pathBreakdown[destination].get(departureTime);
+                    Collection<PathBreakdown> pbs = orderedPaths(pathBreakdown[destination].get(departureTime));
 
                     int monteCarloDrawsForPath = 0;
                     for (PathBreakdown path : pbs) {
@@ -203,7 +221,7 @@ public class TravelTimeMatrixComputer extends R5DataFrameProcess {
 
                     // if there are less routes than expected check direct paths
                     if (monteCarloDrawsForPath < monteCarloDrawsPerMinute) {
-                        Collection<PathBreakdown> directPaths = pathBreakdown[destination].get(DIRECT_KEY);
+                        Collection<PathBreakdown> directPaths = orderedPaths(pathBreakdown[destination].get(DIRECT_KEY));
 
                         PathBreakdown directPath;
                         if (!directPaths.isEmpty()) {
@@ -251,7 +269,7 @@ public class TravelTimeMatrixComputer extends R5DataFrameProcess {
                         breakdown.accessTime = routeSequence.stopSequence.access == null ? 0 : routeSequence.stopSequence.access.time / 60.0f;
                         breakdown.waitTime = iteration.waitTimes.sum() / 60.0f;
                         breakdown.rideTime = routeSequence.stopSequence.rideTimesSeconds == null ? 0 : routeSequence.stopSequence.rideTimesSeconds.sum() / 60.0f;
-                        breakdown.transferTime = routeSequence.stopSequence.transferTime(iteration) / 60f;
+                        breakdown.transferTime = R5Compatibility.transferTime(routeSequence.stopSequence, iteration) / 60f;
                         breakdown.egressTime = routeSequence.stopSequence.egress == null ? 0 : routeSequence.stopSequence.egress.time / 60.0f;
                         breakdown.totalTime = iteration.totalTime / 60.0f;
 
@@ -290,7 +308,7 @@ public class TravelTimeMatrixComputer extends R5DataFrameProcess {
                      departure += 60) {
 
                     // get recorded paths
-                    Collection<PathBreakdown> pathCollection = pathBreakdown[destination].get(departure);
+                    Collection<PathBreakdown> pathCollection = orderedPaths(pathBreakdown[destination].get(departure));
 
                     int monteCarloDrawsForPath = 0;
                     for (PathBreakdown path : pathCollection) {
@@ -300,7 +318,7 @@ public class TravelTimeMatrixComputer extends R5DataFrameProcess {
 
                     // if there are less routes than expected check direct paths
                     if (monteCarloDrawsForPath < monteCarloDrawsPerMinute) {
-                        Collection<PathBreakdown> directPaths = pathBreakdown[destination].get(DIRECT_KEY);
+                        Collection<PathBreakdown> directPaths = orderedPaths(pathBreakdown[destination].get(DIRECT_KEY));
 
                         PathBreakdown directPath;
                         if (!directPaths.isEmpty()) {

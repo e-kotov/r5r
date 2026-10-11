@@ -16,6 +16,7 @@ import com.conveyal.r5.transit.GtfsTransferLoader;
 import com.conveyal.r5.analyst.cluster.TransportNetworkConfig.TransferConfig;
 import org.apache.commons.io.FilenameUtils;
 import org.ipea.r5r.R5RCore;
+import org.ipea.r5r.Utils.R5Compatibility;
 import org.ipea.r5r.RDataFrame;
 
 import java.io.File;
@@ -214,7 +215,7 @@ public class NetworkBuilder {
                 osmFilename = file.getAbsolutePath();
 
                 // Load OSM data into MapDB to pass into network builder.
-                osmFile = new OSM(osmFilename + ".mapdb");
+                osmFile = R5Compatibility.openOsmDatabase(osmFilename + ".mapdb");
                 osmFile.intersectionDetection = true;
                 osmFile.readFromFile(osmFilename);
             }

@@ -44,6 +44,9 @@
 
 **Minor changes**
 
+- Routing functions accept `random_seed` and `lock_schedules` with a seed-supporting custom R5 JAR, for reproducible Monte Carlo draws. Defaults preserve stock R5 behavior.
+
+
 - Car-only and bicycle-only routing in `travel_time_matrix()`, `expanded_travel_time_matrix()`, `arrival_travel_time_matrix()`, `accessibility()` and `pareto_frontier()` is 2.5 to 4 times faster in a benchmark of this change alone (part of the overall gain in Major changes), as r5r no longer runs an unneeded search on foot. Bicycle results are unchanged. Car-only trips can no longer end with a walk not limited by `max_walk_time` (e.g. against a one-way street), so some car travel times are now longer (3% of origin-destination pairs in the Porto Alegre sample data, by 1 to 8 minutes), now consistent with `isochrone()`.
 - `travel_time_matrix()`, `expanded_travel_time_matrix()` and `arrival_travel_time_matrix()` return large results faster: passing an all-to-all matrix of the Porto Alegre sample grid (1.47 million rows) from Java to R went from 0.76 to 0.13 seconds. Results are unchanged.
 - `detailed_itineraries()` with public transport and no `fare_structure` is about 1.5 times faster with `max_trip_duration = 60`, 2.4 times faster with `time_window = 30`, and about 4 times faster with the defaults (`max_trip_duration = 120`, `shortest_path = TRUE`), and uses less memory. The itineraries returned are unchanged, except that with `suboptimal_minutes > 0` the `option` numbers of two itineraries with exactly the same duration and number of segments can be swapped. Routing with a `fare_structure` is unchanged.

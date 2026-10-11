@@ -1,5 +1,7 @@
 package org.ipea.r5r.R5;
 
+import org.ipea.r5r.Utils.R5Compatibility;
+
 import com.conveyal.r5.OneOriginResult;
 import com.conveyal.r5.analyst.*;
 import com.conveyal.r5.analyst.cluster.AnalysisWorkerTask;
@@ -211,7 +213,7 @@ public class R5TravelTimeComputer extends TravelTimeComputer {
 
                 Split origin = sr.getOriginSplit();
 
-                PointSetTimes pointSetTimes = linkedDestinations.eval(
+                PointSetTimes pointSetTimes = R5Compatibility.eval(linkedDestinations,
                         sr::getTravelTimeToVertex,
                         streetSpeedMillimetersPerSecond,
                         walkSpeedMillimetersPerSecond,
@@ -343,6 +345,7 @@ public class R5TravelTimeComputer extends TravelTimeComputer {
         // annotating with the access mode, then use the annotated paths to initialize the appropriate field in the
         // propagater. Not supported for fare requests, which use the McRaptor router and path style.
         if ((request.includePathResults || request.makeTauiSite) && worker != null) {
+            R5Compatibility.copyDepartureTimes(worker, perTargetPropagater);
             perTargetPropagater.pathsToStopsForIteration = worker.pathsPerIteration.stream().peek(paths -> {
                 for (Path path : paths) {
                     if (path != null) {

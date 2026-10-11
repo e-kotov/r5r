@@ -7,6 +7,7 @@
 #' windows. `destinations` can have at most 5000 rows, a limit of R5 for
 #' detailed path information; split larger sets into chunks.
 #'
+#' @template monte_carlo_seed
 #' @template r5r_network
 #' @template r5r_core
 #' @template common_arguments
@@ -136,6 +137,8 @@ expanded_travel_time_matrix <- function(r5r_network,
                                         verbose = FALSE,
                                         progress = FALSE,
                                         output_dir = NULL,
+                                        random_seed = NULL,
+                                        lock_schedules = FALSE,
                                         r5r_core = deprecated()) {
 
   # deprecating r5r_core --------------------------------------
@@ -215,6 +218,7 @@ expanded_travel_time_matrix <- function(r5r_network,
 
   set_time_window(r5r_network, time_window)
   set_monte_carlo_draws(r5r_network, draws_per_minute, time_window)
+  set_monte_carlo_seed(r5r_network, random_seed, lock_schedules)
   set_speed(r5r_network, walk_speed, "walk")
   set_speed(r5r_network, bike_speed, "bike")
   set_max_rides(r5r_network, max_rides)

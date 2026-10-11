@@ -1,6 +1,8 @@
 package org.ipea.r5r;
 
 import com.conveyal.r5.analyst.cluster.PathResult;
+import com.conveyal.r5.profile.ProfileRequest;
+import java.lang.reflect.Field;
 import com.conveyal.r5.analyst.fare.*;
 import com.conveyal.r5.analyst.scenario.Scenario;
 import com.conveyal.r5.api.util.SearchType;
@@ -38,6 +40,10 @@ public class RoutingProperties {
     public int suboptimalMinutes = DEFAULT_SUBOPTIMAL_MINUTES; // Suboptimal minutes in point-to-point queries
     public int timeWindowSize = DEFAULT_TIME_WINDOW_SIZE; // minutes
     public int numberOfMonteCarloDraws = DEFAULT_NUMBER_OF_MONTE_CARLO_DRAWS; //
+    public Integer randomSeed = null;
+    public boolean lockSchedules = false;
+    private static final Field RANDOM_SEED_FIELD = requestField("randomSeed");
+    private static final Field LOCK_SCHEDULES_FIELD = requestField("lockSchedules");
     public int[] percentiles = DEFAULT_PERCENTILES;
     public int[] cutoffs = DEFAULT_CUTOFFS;
     public boolean travelTimesBreakdown = false;
@@ -53,6 +59,35 @@ public class RoutingProperties {
     private TransportNetwork transportNetworkWorking;
     private final Scenario dummyScenario = new DummyScenario();
     boolean scenarioApplied = false;
+
+    // Fork-only fields: keep the bridge build and default routing compatible with stock R5.
+    private static Field requestField(String name) {
+        try {
+            return ProfileRequest.class.getField(name);
+        } catch (NoSuchFieldException e) {
+            return null;
+        }
+    }
+
+    public void setMonteCarloSeed(boolean lockSchedules, Integer randomSeed) {
+        if ((lockSchedules || randomSeed != null)
+                && (RANDOM_SEED_FIELD == null || LOCK_SCHEDULES_FIELD == null)) {
+            throw new IllegalArgumentException("random_seed and lock_schedules require an R5 JAR "
+                    + "with seed support. Set options(r5r.r5jar = ...) before starting Java.");
+        }
+        this.lockSchedules = lockSchedules;
+        this.randomSeed = randomSeed;
+    }
+
+    public void applyMonteCarloSeed(ProfileRequest request) {
+        if (RANDOM_SEED_FIELD == null || LOCK_SCHEDULES_FIELD == null) return;
+        try {
+            RANDOM_SEED_FIELD.set(request, randomSeed);
+            LOCK_SCHEDULES_FIELD.setBoolean(request, lockSchedules);
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException("Cannot set the R5 Monte Carlo seed.", e);
+        }
+    }
 
     public void setFareCalculatorJson(String fareCalculatorJson) {
         // first, check to see if this is a built-in R5 fare calculator JSON representation
@@ -85,6 +120,8 @@ public class RoutingProperties {
         suboptimalMinutes = DEFAULT_SUBOPTIMAL_MINUTES;
         timeWindowSize = DEFAULT_TIME_WINDOW_SIZE;
         numberOfMonteCarloDraws = DEFAULT_NUMBER_OF_MONTE_CARLO_DRAWS;
+        randomSeed = null;
+        lockSchedules = false;
 
         travelTimesBreakdown = false;
         travelTimesBreakdownStat = PathResult.Stat.MEAN;

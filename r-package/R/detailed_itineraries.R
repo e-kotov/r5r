@@ -6,6 +6,7 @@
 #' OpenTripPlanner), it takes much more time and memory than the package's
 #' other, more analytical, routing functions.
 #'
+#' @template monte_carlo_seed
 #' @template r5r_network
 #' @template r5r_core
 #' @template common_arguments
@@ -157,6 +158,8 @@ detailed_itineraries <- function(r5r_network,
                                  drop_geometry = FALSE,
                                  osm_link_ids = FALSE,
                                  output_dir = NULL,
+                                 random_seed = NULL,
+                                 lock_schedules = FALSE,
                                  r5r_core = deprecated()) {
 
   # deprecating r5r_core --------------------------------------
@@ -256,6 +259,7 @@ detailed_itineraries <- function(r5r_network,
 
   set_time_window(r5r_network, time_window)
   set_monte_carlo_draws(r5r_network, 1, time_window)
+  set_monte_carlo_seed(r5r_network, random_seed, lock_schedules)
   set_speed(r5r_network, walk_speed, "walk")
   set_speed(r5r_network, bike_speed, "bike")
   set_max_rides(r5r_network, max_rides)

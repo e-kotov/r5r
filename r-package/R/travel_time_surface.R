@@ -12,6 +12,7 @@ setClass("travel_time_surface", slots=list(
 #' @description A travel time surface is a raster grid (in the Web Mercator projection)
 #' containing travel times from a specified point.
 #'
+#' @template monte_carlo_seed
 #' @template r5r_network
 #' @param origins Either a `POINT sf` object with WGS84 CRS, or a
 #'        `data.frame` containing the columns `id`, `lon` and `lat`.
@@ -123,7 +124,9 @@ travel_time_surface <- function(r5r_network,
                                draws_per_minute = 5L,
                                n_threads = Inf,
                                verbose = FALSE,
-                               progress = FALSE
+                               progress = FALSE,
+                               random_seed = NULL,
+                               lock_schedules = FALSE
                       ) {
   # check inputs ------------------------------------------------------------
   checkmate::assert_class(r5r_network, "r5r_network")
@@ -165,6 +168,7 @@ travel_time_surface <- function(r5r_network,
   set_time_window(r5r_network, time_window)
   set_percentiles(r5r_network, percentiles)
   set_monte_carlo_draws(r5r_network, draws_per_minute, time_window)
+  set_monte_carlo_seed(r5r_network, random_seed, lock_schedules)
   set_speed(r5r_network, walk_speed, "walk")
   set_speed(r5r_network, bike_speed, "bike")
   set_max_rides(r5r_network, max_rides)

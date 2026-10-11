@@ -9,6 +9,7 @@
 #' travel times from each origin to the centroids of all segments in the
 #' transport network.
 #'
+#' @template monte_carlo_seed
 #' @template r5r_network
 #' @template r5r_core
 #' @inheritParams travel_time_matrix
@@ -154,6 +155,8 @@ isochrone <- function(r5r_network,
                       progress = TRUE,
                       # no longer used
                       sample_size = deprecated(),
+                      random_seed = NULL,
+                      lock_schedules = FALSE,
                       r5r_core = deprecated()
                       ){
 
@@ -217,6 +220,8 @@ isochrone <- function(r5r_network,
                               max_rides = max_rides,
                               max_lts = max_lts,
                               draws_per_minute = draws_per_minute,
+                              random_seed = random_seed,
+                              lock_schedules = lock_schedules,
                               n_threads = n_threads,
                               verbose = verbose,
                               zoom = zoom
@@ -264,6 +269,8 @@ isochrone <- function(r5r_network,
                               max_rides = max_rides,
                               max_lts = max_lts,
                               draws_per_minute = draws_per_minute,
+                              random_seed = random_seed,
+                              lock_schedules = lock_schedules,
                               n_threads = n_threads,
                               verbose = verbose,
                               progress = progress
