@@ -40,7 +40,7 @@ travel_time_surface(
 - r5r_network:
 
   A routable transport network created with
-  [`build_network()`](https://ipeagit.github.io/r5r/dev/reference/build_network.md).
+  [`build_network()`](https://ipea.github.io/r5r/dev/reference/build_network.md).
 
 - origins:
 
@@ -60,8 +60,8 @@ travel_time_surface(
 - mode:
 
   A character vector. The transport modes allowed for access, transfer
-  and vehicle legs of the trips. Defaults to `WALK`. Please see details
-  for other options.
+  and vehicle legs of the trips. Defaults to `WALK`. See details for
+  other options.
 
 - mode_egress:
 
@@ -71,35 +71,31 @@ travel_time_surface(
 
 - departure_datetime:
 
-  A POSIXct object. Please note that the departure time only influences
-  public transport legs. When working with public transport networks,
-  please check the `calendar.txt` within your GTFS feeds for valid
-  dates. Please see details for further information on how datetimes are
-  parsed.
+  A POSIXct object. Only affects public transport legs; when routing
+  with public transport, it must fall within the service period of the
+  GTFS feeds (`calendar.txt`; see
+  [`check_transit_availability()`](https://ipea.github.io/r5r/dev/reference/check_transit_availability.md)).
+  Defaults to [`Sys.time()`](https://rdrr.io/r/base/Sys.time.html). See
+  details for how datetimes are parsed.
 
 - time_window:
 
   An integer. The time window in minutes for which `r5r` will calculate
   multiple travel time matrices departing each minute. Defaults to 10
   minutes. The function returns the result based on median travel times.
-  Please read the time window vignette for more details on its usage
-  [`vignette("time_window", package = "r5r")`](https://ipeagit.github.io/r5r/dev/articles/time_window.md)
+  See
+  [`vignette("time_window", package = "r5r")`](https://ipea.github.io/r5r/dev/articles/time_window.md).
 
 - percentiles:
 
-  An integer vector (max length of 5). Specifies the percentile to use
-  when returning accessibility estimates within the given time window.
-  Please note that this parameter is applied to the travel time
-  estimates that generate the accessibility results, and not to the
-  accessibility distribution itself (i.e. if the 25th percentile is
-  specified, the accessibility is calculated from the 25th percentile
-  travel time, which may or may not be equal to the 25th percentile of
-  the accessibility distribution itself). Defaults to 50, returning the
-  accessibility calculated from the median travel time. If a vector with
-  length bigger than 1 is passed, the output contains an additional
-  column that specifies the percentile of each accessibility estimate.
-  Due to upstream restrictions, only 5 percentiles can be specified at a
-  time. For more details, please see `R5` documentation at
+  An integer vector (max length of 5, an `R5` limit). The travel time
+  percentiles within the time window from which accessibility is
+  calculated. They apply to travel times, not to the accessibility
+  distribution: with 25, accessibility is calculated from the 25th
+  percentile travel time, which may differ from the 25th percentile of
+  accessibility. Defaults to 50 (the median travel time). With more than
+  one value, the output gets a column identifying the percentile of each
+  estimate. See the `R5` documentation at
   <https://docs.conveyal.com/analysis/methodology#accounting-for-variability>.
 
 - max_walk_time:
@@ -125,12 +121,14 @@ travel_time_surface(
 - max_car_time:
 
   An integer. The maximum driving time (in minutes) to access and egress
-  the transit network. Defaults to no restrictions, as long as
-  `max_trip_duration` is respected. The max time is considered
-  separately for each leg (e.g. if you set `max_car_time` to 15 minutes,
-  you could potentially drive up to 15 minutes to reach transit, and up
-  to *another* 15 minutes to reach the destination after leaving
-  transit). Defaults to `Inf`, no limit.
+  the transit network, or to complete car-only trips. Defaults to no
+  restrictions, as long as `max_trip_duration` is respected. The max
+  time is considered separately for each leg (e.g. if you set
+  `max_car_time` to 15 minutes, you could potentially drive up to 15
+  minutes to reach transit, and up to *another* 15 minutes to reach the
+  destination after leaving transit). Defaults to `Inf`, no limit. In
+  car-only trips, whenever `max_car_time` differs from
+  `max_trip_duration`, the lowest value is considered.
 
 - max_trip_duration:
 
@@ -155,22 +153,22 @@ travel_time_surface(
   An integer between 1 and 4. The maximum level of traffic stress that
   cyclists will tolerate. A value of 1 means cyclists will only travel
   through the quietest streets, while a value of 4 indicates cyclists
-  can travel through any road. Defaults to 2. Please see details for
-  more information.
+  can travel through any road. Defaults to 2. See details.
 
 - fare_structure:
 
   A fare structure object, following the convention set in
-  [`setup_fare_structure()`](https://ipeagit.github.io/r5r/dev/reference/setup_fare_structure.md).
-  This object describes how transit fares should be calculated. Please
-  see the fare structure vignette to understand how this object is
-  structured:
-  [`vignette("fare_structure", package = "r5r")`](https://ipeagit.github.io/r5r/dev/articles/fare_structure.md).
+  [`setup_fare_structure()`](https://ipea.github.io/r5r/dev/reference/setup_fare_structure.md).
+  This object describes how transit fares should be calculated. See
+  [`vignette("fare_structure", package = "r5r")`](https://ipea.github.io/r5r/dev/articles/fare_structure.md)
+  for its structure.
 
 - max_fare:
 
   A number. The maximum value that trips can cost when calculating the
-  fastest journey between each origin and destination pair.
+  fastest journey between each origin and destination pair. Defaults to
+  `Inf` (no limit). A finite value requires a `fare_structure`; an error
+  is raised otherwise.
 
 - new_carspeeds:
 
@@ -185,14 +183,14 @@ travel_time_surface(
   table must contain the columns `poly_id` with a unique id for each
   polygon, `scale` with the new speed scaling factors and `priority`,
   which is a number ranking which polygon should be considered in case
-  of overlapping polygons. See more into in the
-  `link to congestion vignette`.
+  of overlapping polygons. See more info in the scenarios vignette
+  ([`vignette("scenarios", package = "r5r")`](https://ipea.github.io/r5r/dev/articles/scenarios.md)).
 
 - carspeed_scale:
 
-  Numeric. The default car speed to use for road segments not specified
-  in `new_carspeeds`. By default, it is `NULL` and the speeds of the
-  unlisted roads are kept unchanged.
+  Numeric. The scaling factor applied to the car speed of road segments
+  not specified in `new_carspeeds`. Defaults to `1`, which keeps the
+  speeds of the unlisted roads unchanged.
 
 - new_lts:
 
@@ -204,9 +202,8 @@ travel_time_surface(
 
 - draws_per_minute:
 
-  An integer. The number of Monte Carlo draws to perform per time window
-  minute when calculating travel time matrices and when estimating
-  accessibility. Defaults to 5. This would mean 300 draws in a 60-minute
+  An integer. The number of Monte Carlo draws to perform per minute of
+  `time_window`. Defaults to 5. This would mean 300 draws in a 60-minute
   time window, for example. This parameter only affects the results when
   the GTFS feeds contain a `frequencies.txt` table. If the GTFS feed
   does not have a frequency table, r5r still allows for multiple runs
@@ -220,9 +217,8 @@ travel_time_surface(
 - verbose:
 
   A logical. Whether to show `R5` informative messages when running the
-  function. Defaults to `FALSE` (please note that in such case `R5`
-  error messages are still shown). Setting `verbose` to `TRUE` shows
-  detailed output, which can be useful for debugging issues not caught
+  function. Defaults to `FALSE` (`R5` error messages are still shown).
+  `TRUE` shows detailed output, useful for debugging issues not caught
   by `r5r`.
 
 - progress:
@@ -247,20 +243,19 @@ include:
   `CABLE_CAR`, `GONDOLA`, `FUNICULAR`. The option `TRANSIT`
   automatically considers all public transport modes available.
 
-- **Non transit modes:** `WALK`, `BICYCLE`, `CAR`, `BICYCLE_RENT`,
-  `CAR_PARK`.
+- **Non transit modes:** `WALK`, `BICYCLE`, `CAR`.
 
 ## Level of Traffic Stress (LTS)
 
-When cycling is enabled in `R5` (by passing the value `BIKE` to either
-`mode` or `mode_egress`), setting `max_lts` will allow cycling only on
-streets with a given level of danger/stress. Setting `max_lts` to 1, for
-example, will allow cycling only on separated bicycle infrastructure or
-low-traffic streets and routing will revert to walking when traversing
-any links with LTS exceeding 1. Setting `max_lts` to 3 will allow
-cycling on links with LTS 1, 2 or 3. Routing also reverts to walking if
-the street segment is tagged as non-bikable in OSM (e.g. a staircase),
-independently of the specified max LTS.
+When cycling is enabled in `R5` (by passing the value `BICYCLE` to
+either `mode` or `mode_egress`), setting `max_lts` will allow cycling
+only on streets with a given level of danger/stress. Setting `max_lts`
+to 1, for example, will allow cycling only on separated bicycle
+infrastructure or low-traffic streets and routing will revert to walking
+when traversing any links with LTS exceeding 1. Setting `max_lts` to 3
+will allow cycling on links with LTS 1, 2 or 3. Routing also reverts to
+walking if the street segment is tagged as non-bikable in OSM (e.g. a
+staircase), independently of the specified max LTS.
 
 The default methodology for assigning LTS values to network edges is
 based on commonly tagged attributes of OSM ways. See more info about LTS
@@ -302,11 +297,11 @@ perhaps surprisingly, ignoring the timezone attribute.
 ## Routing algorithm
 
 The
-[`travel_time_matrix()`](https://ipeagit.github.io/r5r/dev/reference/travel_time_matrix.md),
-[`expanded_travel_time_matrix()`](https://ipeagit.github.io/r5r/dev/reference/expanded_travel_time_matrix.md),
-[`arrival_travel_time_matrix()`](https://ipeagit.github.io/r5r/dev/reference/arrival_travel_time_matrix.md)
+[`travel_time_matrix()`](https://ipea.github.io/r5r/dev/reference/travel_time_matrix.md),
+[`expanded_travel_time_matrix()`](https://ipea.github.io/r5r/dev/reference/expanded_travel_time_matrix.md),
+[`arrival_travel_time_matrix()`](https://ipea.github.io/r5r/dev/reference/arrival_travel_time_matrix.md)
 and
-[`accessibility()`](https://ipeagit.github.io/r5r/dev/reference/accessibility.md)
+[`accessibility()`](https://ipea.github.io/r5r/dev/reference/accessibility.md)
 functions use an `R5`-specific extension to the RAPTOR routing algorithm
 (see Conway et al., 2017). This RAPTOR extension uses a systematic
 sample of one departure per minute over the time window set by the user
@@ -329,10 +324,10 @@ algorithm.
 ## See also
 
 Other support functions:
-[`exists_tiff()`](https://ipeagit.github.io/r5r/dev/reference/exists_tiff.md),
-[`fileurl_from_metadata()`](https://ipeagit.github.io/r5r/dev/reference/fileurl_from_metadata.md),
-[`get_gtfs_errors()`](https://ipeagit.github.io/r5r/dev/reference/get_gtfs_errors.md),
-[`start_r5r_java()`](https://ipeagit.github.io/r5r/dev/reference/start_r5r_java.md),
-[`stop_r5()`](https://ipeagit.github.io/r5r/dev/reference/stop_r5.md),
-[`tempdir_unique()`](https://ipeagit.github.io/r5r/dev/reference/tempdir_unique.md),
-[`validate_bad_osm_ids()`](https://ipeagit.github.io/r5r/dev/reference/validate_bad_osm_ids.md)
+[`exists_tiff()`](https://ipea.github.io/r5r/dev/reference/exists_tiff.md),
+[`fileurl_from_metadata()`](https://ipea.github.io/r5r/dev/reference/fileurl_from_metadata.md),
+[`get_gtfs_errors()`](https://ipea.github.io/r5r/dev/reference/get_gtfs_errors.md),
+[`start_r5r_java()`](https://ipea.github.io/r5r/dev/reference/start_r5r_java.md),
+[`stop_r5()`](https://ipea.github.io/r5r/dev/reference/stop_r5.md),
+[`tempdir_unique()`](https://ipea.github.io/r5r/dev/reference/tempdir_unique.md),
+[`validate_bad_osm_ids()`](https://ipea.github.io/r5r/dev/reference/validate_bad_osm_ids.md)

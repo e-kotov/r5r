@@ -1,26 +1,25 @@
 # Calculate travel time matrix between origin destination pairs considering a time of arrival
 
-Computation of travel time estimates between one or multiple origin
-destination pairs considering a time of arrival. This function considers
-a time of arrival set by the user. The function returns the travel time
-of the trip with the latest departure time that arrives before the
-arrival time set by the user. If you want to calculate travel times
-considering a departure time, have a' look at the
-[`travel_time_matrix()`](https://ipeagit.github.io/r5r/dev/reference/travel_time_matrix.md)
-function. This function is a wrapper around
-[`expanded_travel_time_matrix()`](https://ipeagit.github.io/r5r/dev/reference/expanded_travel_time_matrix.md).
-On one hand, this means this the output of this function has more
-columns (more info) compared the output of
-[`travel_time_matrix()`](https://ipeagit.github.io/r5r/dev/reference/travel_time_matrix.md).
-On the other hand, this function can be very memory intensive if the
-user allows for really long max trip duration.
+Computes travel times between origin-destination pairs for a given
+arrival time: for each pair, the trip with the latest departure that
+arrives by `arrival_datetime`. Departures are searched minute by minute
+between `arrival_datetime - max_trip_duration` and `arrival_datetime`,
+so `max_trip_duration` also sets the search window. For a departure
+time, use
+[`travel_time_matrix()`](https://ipea.github.io/r5r/dev/reference/travel_time_matrix.md).
+This function wraps
+[`expanded_travel_time_matrix()`](https://ipea.github.io/r5r/dev/reference/expanded_travel_time_matrix.md),
+so its output has more columns than that of
+[`travel_time_matrix()`](https://ipea.github.io/r5r/dev/reference/travel_time_matrix.md),
+and it can be very memory intensive with a long `max_trip_duration`.
+`destinations` can have at most 5000 rows, a limit of R5 for detailed
+path information; split larger sets into chunks.
 
 ## Usage
 
 ``` r
 arrival_travel_time_matrix(
   r5r_network,
-  r5r_core = deprecated(),
   origins,
   destinations,
   mode = "WALK",
@@ -42,7 +41,8 @@ arrival_travel_time_matrix(
   n_threads = Inf,
   verbose = FALSE,
   progress = FALSE,
-  output_dir = NULL
+  output_dir = NULL,
+  r5r_core = deprecated()
 )
 ```
 
@@ -51,12 +51,7 @@ arrival_travel_time_matrix(
 - r5r_network:
 
   A routable transport network created with
-  [`build_network()`](https://ipeagit.github.io/r5r/dev/reference/build_network.md).
-
-- r5r_core:
-
-  The `r5r_core` argument is deprecated as of r5r v2.3.0. Please use the
-  `r5r_network` argument instead.
+  [`build_network()`](https://ipea.github.io/r5r/dev/reference/build_network.md).
 
 - origins, destinations:
 
@@ -66,8 +61,8 @@ arrival_travel_time_matrix(
 - mode:
 
   A character vector. The transport modes allowed for access, transfer
-  and vehicle legs of the trips. Defaults to `WALK`. Please see details
-  for other options.
+  and vehicle legs of the trips. Defaults to `WALK`. See details for
+  other options.
 
 - mode_egress:
 
@@ -77,7 +72,12 @@ arrival_travel_time_matrix(
 
 - arrival_datetime:
 
-  A POSIXct object.
+  A POSIXct object. The time by which trips must arrive. When routing
+  with public transport, services must run on the date of
+  `arrival_datetime - max_trip_duration` (see
+  [`check_transit_availability()`](https://ipea.github.io/r5r/dev/reference/check_transit_availability.md)).
+  Defaults to [`Sys.time()`](https://rdrr.io/r/base/Sys.time.html). See
+  details for how datetimes are parsed.
 
 - breakdown:
 
@@ -85,58 +85,50 @@ arrival_travel_time_matrix(
   the output. If `FALSE` (the default), the output lists the total time
   between each origin-destination pair and the routes used to complete
   the trip for each minute of the specified time window. If `TRUE`, the
-  output includes the total access, waiting, in-vehicle and transfer
-  time of each trip. Please note that setting this parameter to `TRUE`
-  makes the function significantly slower.
+  output also includes the access, waiting, in-vehicle, transfer and
+  egress time of each trip, and its number of public transport rides.
+  For trips made only by walking, cycling or driving (`routes` equal to
+  `[WALK]`, `[BICYCLE]` or `[CAR]`), these components are all `0` and
+  `total_time` holds the whole trip.
 
 - max_walk_time:
 
   An integer. The maximum walking time (in minutes) to access and egress
-  the transit network, to make transfers within the network or to
-  complete walk-only trips. Defaults to no restrictions (numeric value
-  of `Inf`), as long as `max_trip_duration` is respected. When routing
-  transit trips, the max time is considered separately for each leg
-  (e.g. if you set `max_walk_time` to 15, you could get trips with an up
-  to 15 minutes walk leg to reach transit and another up to 15 minutes
-  walk leg to reach the destination after leaving transit. In walk-only
-  trips, whenever `max_walk_time` differs from `max_trip_duration`, the
-  lowest value is considered.
+  the transit network, make transfers, or complete walk-only trips.
+  Applies to each leg separately (e.g. `15` allows up to 15 minutes to
+  reach transit and another 15 after leaving it). Defaults to `Inf` (no
+  limit besides `max_trip_duration`). In walk-only trips, the lower of
+  `max_walk_time` and `max_trip_duration` applies.
 
 - max_bike_time:
 
   An integer. The maximum cycling time (in minutes) to access and egress
-  the transit network, to make transfers within the network or to
-  complete bicycle-only trips. Defaults to no restrictions (numeric
-  value of `Inf`), as long as `max_trip_duration` is respected. When
-  routing transit trips, the max time is considered separately for each
-  leg (e.g. if you set `max_bike_time` to 15, you could get trips with
-  an up to 15 minutes cycle leg to reach transit and another up to 15
-  minutes cycle leg to reach the destination after leaving transit. In
-  bicycle-only trips, whenever `max_bike_time` differs from
-  `max_trip_duration`, the lowest value is considered.
+  the transit network, make transfers, or complete bicycle-only trips.
+  Applies to each leg separately (e.g. `15` allows up to 15 minutes to
+  reach transit and another 15 after leaving it). Defaults to `Inf` (no
+  limit besides `max_trip_duration`). In bicycle-only trips, the lower
+  of `max_bike_time` and `max_trip_duration` applies.
 
 - max_car_time:
 
   An integer. The maximum driving time (in minutes) to access and egress
-  the transit network. Defaults to no restrictions, as long as
-  `max_trip_duration` is respected. The max time is considered
-  separately for each leg (e.g. if you set `max_car_time` to 15 minutes,
-  you could potentially drive up to 15 minutes to reach transit, and up
-  to *another* 15 minutes to reach the destination after leaving
-  transit). Defaults to `Inf`, no limit.
+  the transit network, or to complete car-only trips. Applies to each
+  leg separately (e.g. `15` allows up to 15 minutes to reach transit and
+  another 15 after leaving it). Defaults to `Inf` (no limit besides
+  `max_trip_duration`). In car-only trips, the lower of `max_car_time`
+  and `max_trip_duration` applies.
 
 - max_trip_duration:
 
-  An integer. The maximum trip duration in minutes. Defaults to 120
-  minutes (2 hours).
+  An integer. The maximum trip duration in minutes. Defaults to 120.
 
 - walk_speed:
 
-  A numeric. Average walk speed in km/h. Defaults to 3.6 km/h.
+  A numeric. Average walk speed in km/h. Defaults to 3.6.
 
 - bike_speed:
 
-  A numeric. Average cycling speed in km/h. Defaults to 12 km/h.
+  A numeric. Average cycling speed in km/h. Defaults to 12.
 
 - max_rides:
 
@@ -148,8 +140,7 @@ arrival_travel_time_matrix(
   An integer between 1 and 4. The maximum level of traffic stress that
   cyclists will tolerate. A value of 1 means cyclists will only travel
   through the quietest streets, while a value of 4 indicates cyclists
-  can travel through any road. Defaults to 2. Please see details for
-  more information.
+  can travel through any road. Defaults to 2. See details.
 
 - new_carspeeds:
 
@@ -164,14 +155,14 @@ arrival_travel_time_matrix(
   table must contain the columns `poly_id` with a unique id for each
   polygon, `scale` with the new speed scaling factors and `priority`,
   which is a number ranking which polygon should be considered in case
-  of overlapping polygons. See more into in the
-  `link to congestion vignette`.
+  of overlapping polygons. See more info in the scenarios vignette
+  ([`vignette("scenarios", package = "r5r")`](https://ipea.github.io/r5r/dev/articles/scenarios.md)).
 
 - carspeed_scale:
 
-  Numeric. The default car speed to use for road segments not specified
-  in `new_carspeeds`. By default, it is `NULL` and the speeds of the
-  unlisted roads are kept unchanged.
+  Numeric. The scaling factor applied to the car speed of road segments
+  not specified in `new_carspeeds`. Defaults to `1`, which keeps the
+  speeds of the unlisted roads unchanged.
 
 - new_lts:
 
@@ -183,9 +174,8 @@ arrival_travel_time_matrix(
 
 - draws_per_minute:
 
-  An integer. The number of Monte Carlo draws to perform per time window
-  minute when calculating travel time matrices and when estimating
-  accessibility. Defaults to 5. This would mean 300 draws in a 60-minute
+  An integer. The number of Monte Carlo draws to perform per minute of
+  `time_window`. Defaults to 5. This would mean 300 draws in a 60-minute
   time window, for example. This parameter only affects the results when
   the GTFS feeds contain a `frequencies.txt` table. If the GTFS feed
   does not have a frequency table, r5r still allows for multiple runs
@@ -194,51 +184,51 @@ arrival_travel_time_matrix(
 - n_threads:
 
   An integer. The number of threads to use when running the router in
-  parallel. Defaults to use all available threads (Inf).
+  parallel. Defaults to `Inf` (all available threads).
 
 - verbose:
 
   A logical. Whether to show `R5` informative messages when running the
-  function. Defaults to `FALSE` (please note that in such case `R5`
-  error messages are still shown). Setting `verbose` to `TRUE` shows
-  detailed output, which can be useful for debugging issues not caught
+  function. Defaults to `FALSE` (`R5` error messages are still shown).
+  `TRUE` shows detailed output, useful for debugging issues not caught
   by `r5r`.
 
 - progress:
 
   A logical. Whether to show a progress counter when running the router.
-  Defaults to `FALSE`. Only works when `verbose` is set to `FALSE`, so
-  the progress counter does not interfere with `R5`'s output messages.
-  Setting `progress` to `TRUE` may impose a small penalty for
-  computation efficiency, because the progress counter must be
-  synchronized among all active threads.
+  Defaults to `FALSE`. Only works when `verbose` is `FALSE`. May
+  slightly slow computation, as the counter is synchronized across
+  threads.
 
 - output_dir:
 
-  Either `NULL` or a path to an existing directory. When not `NULL` (the
-  default), the function will write one `.csv` file with the results for
-  each origin in the specified directory. In such case, the function
-  returns the path specified in this parameter. This parameter is
-  particularly useful when running on memory-constrained settings
-  because writing the results directly to disk prevents `r5r` from
-  loading them to RAM memory.
+  Either `NULL` (the default) or a path to an existing directory. When a
+  path is given, the function writes the results as `.csv` files to that
+  directory and returns the path instead of the results. Useful in
+  memory-constrained settings, as results are not loaded into RAM.
+  Missing values (`NA`) are written as empty fields.
+
+- r5r_core:
+
+  The `r5r_core` argument is deprecated as of r5r v2.3.0. Use the
+  `r5r_network` argument instead.
 
 ## Value
 
-A `data.table` with travel time estimates (in minutes) and the routes
-used in each trip between origin and destination pairs, for each minute
-of the specified time window. Each set of origin, destination and
-departure minute can appear up to N times, where N is the number of
-Monte Carlo draws specified in the function arguments (please note that
-this only applies when the GTFS feeds that describe the transit network
-include a frequencies table, otherwise only a single draw is performed).
-A pair is completely absent from the final output if no trips could be
-completed in any of the minutes of the time window. If for a single pair
-trips could be completed in some of the minutes of the time window, but
-not for all of them, the minutes in which trips couldn't be completed
-will have `NA` travel time and routes used. If `output_dir` is not
-`NULL`, the function returns the path specified in that parameter, in
-which the `.csv` files containing the results are saved.
+A `data.table` with one row per origin-destination pair that can be
+reached by `arrival_datetime`, describing the trip with the latest
+departure that still arrives in time: its `departure_time`, the `routes`
+used and its `total_time` (in minutes), plus the columns added by
+`breakdown = TRUE` (see
+[`expanded_travel_time_matrix()`](https://ipea.github.io/r5r/dev/reference/expanded_travel_time_matrix.md)).
+Pairs that cannot be reached in time are absent from the output. When
+the search window crosses midnight, departure times after midnight are
+reported as `"24:MM:SS"`, and only the public transport services of the
+departure day are considered. Trips made only by walking, cycling or
+driving have travel times in whole minutes, so they can arrive up to 59
+seconds after `arrival_datetime`. If `output_dir` is not `NULL`, the
+function returns the path specified in that parameter, in which the
+`.csv` files containing the results are saved.
 
 ## Transport modes
 
@@ -249,20 +239,19 @@ include:
   `CABLE_CAR`, `GONDOLA`, `FUNICULAR`. The option `TRANSIT`
   automatically considers all public transport modes available.
 
-- **Non transit modes:** `WALK`, `BICYCLE`, `CAR`, `BICYCLE_RENT`,
-  `CAR_PARK`.
+- **Non transit modes:** `WALK`, `BICYCLE`, `CAR`.
 
 ## Level of Traffic Stress (LTS)
 
-When cycling is enabled in `R5` (by passing the value `BIKE` to either
-`mode` or `mode_egress`), setting `max_lts` will allow cycling only on
-streets with a given level of danger/stress. Setting `max_lts` to 1, for
-example, will allow cycling only on separated bicycle infrastructure or
-low-traffic streets and routing will revert to walking when traversing
-any links with LTS exceeding 1. Setting `max_lts` to 3 will allow
-cycling on links with LTS 1, 2 or 3. Routing also reverts to walking if
-the street segment is tagged as non-bikable in OSM (e.g. a staircase),
-independently of the specified max LTS.
+When cycling is enabled in `R5` (by passing the value `BICYCLE` to
+either `mode` or `mode_egress`), setting `max_lts` will allow cycling
+only on streets with a given level of danger/stress. Setting `max_lts`
+to 1, for example, will allow cycling only on separated bicycle
+infrastructure or low-traffic streets and routing will revert to walking
+when traversing any links with LTS exceeding 1. Setting `max_lts` to 3
+will allow cycling on links with LTS 1, 2 or 3. Routing also reverts to
+walking if the street segment is tagged as non-bikable in OSM (e.g. a
+staircase), independently of the specified max LTS.
 
 The default methodology for assigning LTS values to network edges is
 based on commonly tagged attributes of OSM ways. See more info about LTS
@@ -304,10 +293,10 @@ perhaps surprisingly, ignoring the timezone attribute.
 ## Routing algorithm
 
 The
-[`travel_time_matrix()`](https://ipeagit.github.io/r5r/dev/reference/travel_time_matrix.md),
-[`expanded_travel_time_matrix()`](https://ipeagit.github.io/r5r/dev/reference/expanded_travel_time_matrix.md),
+[`travel_time_matrix()`](https://ipea.github.io/r5r/dev/reference/travel_time_matrix.md),
+[`expanded_travel_time_matrix()`](https://ipea.github.io/r5r/dev/reference/expanded_travel_time_matrix.md),
 `arrival_travel_time_matrix()` and
-[`accessibility()`](https://ipeagit.github.io/r5r/dev/reference/accessibility.md)
+[`accessibility()`](https://ipea.github.io/r5r/dev/reference/accessibility.md)
 functions use an `R5`-specific extension to the RAPTOR routing algorithm
 (see Conway et al., 2017). This RAPTOR extension uses a systematic
 sample of one departure per minute over the time window set by the user
@@ -330,10 +319,10 @@ algorithm.
 ## See also
 
 Other routing:
-[`detailed_itineraries()`](https://ipeagit.github.io/r5r/dev/reference/detailed_itineraries.md),
-[`expanded_travel_time_matrix()`](https://ipeagit.github.io/r5r/dev/reference/expanded_travel_time_matrix.md),
-[`pareto_frontier()`](https://ipeagit.github.io/r5r/dev/reference/pareto_frontier.md),
-[`travel_time_matrix()`](https://ipeagit.github.io/r5r/dev/reference/travel_time_matrix.md)
+[`detailed_itineraries()`](https://ipea.github.io/r5r/dev/reference/detailed_itineraries.md),
+[`expanded_travel_time_matrix()`](https://ipea.github.io/r5r/dev/reference/expanded_travel_time_matrix.md),
+[`pareto_frontier()`](https://ipea.github.io/r5r/dev/reference/pareto_frontier.md),
+[`travel_time_matrix()`](https://ipea.github.io/r5r/dev/reference/travel_time_matrix.md)
 
 ## Examples
 
@@ -343,6 +332,7 @@ library(r5r)
 # build transport network
 data_path <- system.file("extdata/poa", package = "r5r")
 r5r_network <- build_network(data_path )
+#> Using cached R5 version from /home/runner/.cache/R/r5r/r5_jar_v7.5.1/r5-v7.5-1-gf3631e9-all.jar
 #> ℹ Using cached network from
 #>   /home/runner/work/_temp/Library/r5r/extdata/poa/network.dat.
 
@@ -369,19 +359,19 @@ head(arrival_ttm)
 #>          from_id               to_id departure_time draw_number routes
 #>           <char>              <char>         <char>       <int> <char>
 #> 1: public_market       public_market       13:59:00           1 [WALK]
-#> 2: public_market bus_central_station       13:46:00           1 LINHA1
-#> 3: public_market    gasometer_museum       13:46:00           1   2441
-#> 4: public_market santa_casa_hospital       13:46:00           1 [WALK]
+#> 2: public_market bus_central_station       13:45:00           1 LINHA1
+#> 3: public_market    gasometer_museum       13:45:00           1   2441
+#> 4: public_market santa_casa_hospital       13:44:00           1 [WALK]
 #> 5: public_market            townhall       13:56:00           1 [WALK]
-#> 6: public_market     piratini_palace       13:45:00           1 [WALK]
+#> 6: public_market     piratini_palace       13:42:00           1 [WALK]
 #>    total_time
 #>         <num>
 #> 1:        0.0
-#> 2:       12.8
-#> 3:       10.7
-#> 4:       13.6
-#> 5:        3.2
-#> 6:       14.9
+#> 2:       13.8
+#> 3:       11.7
+#> 4:       15.4
+#> 5:        3.6
+#> 6:       17.4
 
 # when breakdown = TRUE the output contains much more information
 arrival_ttm2 <- arrival_travel_time_matrix(
@@ -398,19 +388,19 @@ head(arrival_ttm2)
 #>          from_id               to_id departure_time draw_number access_time
 #>           <char>              <char>         <char>       <int>       <num>
 #> 1: public_market       public_market       13:59:00           1         0.0
-#> 2: public_market bus_central_station       13:46:00           1         3.1
-#> 3: public_market    gasometer_museum       13:46:00           1         2.8
-#> 4: public_market santa_casa_hospital       13:46:00           1         0.0
+#> 2: public_market bus_central_station       13:45:00           1         4.8
+#> 3: public_market    gasometer_museum       13:45:00           1         3.5
+#> 4: public_market santa_casa_hospital       13:44:00           1         0.0
 #> 5: public_market            townhall       13:56:00           1         0.0
-#> 6: public_market     piratini_palace       13:45:00           1         0.0
+#> 6: public_market     piratini_palace       13:42:00           1         0.0
 #>    wait_time ride_time transfer_time egress_time routes n_rides total_time
 #>        <num>     <num>         <num>       <num> <char>   <int>      <num>
 #> 1:       0.0       0.0             0         0.0 [WALK]       0        0.0
-#> 2:       1.9       1.6             0         6.2 LINHA1       1       12.8
-#> 3:       1.2       4.9             0         1.8   2441       1       10.7
-#> 4:       0.0       0.0             0         0.0 [WALK]       0       13.6
-#> 5:       0.0       0.0             0         0.0 [WALK]       0        3.2
-#> 6:       0.0       0.0             0         0.0 [WALK]       0       14.9
+#> 2:       1.2       1.6             0         6.2 LINHA1       1       13.8
+#> 3:       1.5       4.9             0         1.8   2441       1       11.7
+#> 4:       0.0       0.0             0         0.0 [WALK]       0       15.4
+#> 5:       0.0       0.0             0         0.0 [WALK]       0        3.6
+#> 6:       0.0       0.0             0         0.0 [WALK]       0       17.4
 
 stop_r5(r5r_network)
 #> r5r_network has been successfully stopped.

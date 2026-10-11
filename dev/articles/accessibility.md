@@ -7,37 +7,27 @@ using the `r5r` package.
 
 ## 1. Introduction
 
-Accessibility indicators measure the ease with which opportunities, such
-as jobs, can be reached by a traveler from a particular location
-(Levinson and et al. 2020). This vignette shows how to calculate and
-visualize accessibility in R using the [`r5r`
-package](https://ipeagit.github.io/r5r/index.html) using a reproducible
-example. In this example, we will be using a sample data set for the
-city of Porto Alegre (Brazil) included in `r5r`.
+Accessibility indicators measure how easily opportunities, such as jobs,
+can be reached from a given location (Levinson and et al. 2020). This
+vignette calculates and maps accessibility with the [`r5r`
+package](https://ipea.github.io/r5r/index.html), using the Porto Alegre
+(Brazil) sample data included in `r5r`, in two ways:
 
-There are two ways to calculate / visualize accessibility using `r5r`.
-The quick and easy option is using the
-[`r5r::accessibility()`](https://ipeagit.github.io/r5r/dev/reference/accessibility.md)
-function. The other alternative requires one to first calculate a travel
-time matrix, and then to use the [{accessibility}
-package](https://ipeagit.github.io/accessibility/). This is a more
-flexible options because the
-[accessibility](https://github.com/ipeaGIT/accessibility) package
-provides a wider range of options of accessibility metrics. We will
-cover both approaches in this vignette.
-
-Before we start, we need to increase Java memory + load a few libraries,
-and to build routable transport network.
+- **quick:**
+  [`r5r::accessibility()`](https://ipea.github.io/r5r/dev/reference/accessibility.md);
+- **flexible:** an `r5r` travel time matrix passed to the
+  [{accessibility} package](https://ipea.github.io/accessibility/),
+  which offers a wider range of metrics.
 
 ## 2. Build routable transport network with `build_network()`
 
 #### Increase Java memory and load libraries
 
-First, we need to increase the memory available to Java and load the
-packages used in this vignette. Please note we allocate RAM memory to
-Java *before* loading our libraries.
+Set Java memory before loading the packages
+([why](https://ipea.github.io/r5r/articles/r5r.html#usage)).
 
 ``` r
+
 options(java.parameters = "-Xmx2G")
 
 library(r5r)
@@ -50,12 +40,11 @@ library(h3jsr)
 library(dplyr)
 ```
 
-To build a routable transport network with `r5r`, the user needs to call
-[`build_network()`](https://ipeagit.github.io/r5r/dev/reference/build_network.md)
-with the path to the directory where OpenStreetMap and GTFS data are
-stored.
+[`build_network()`](https://ipea.github.io/r5r/dev/reference/build_network.md)
+takes the directory holding the OpenStreetMap and GTFS data:
 
 ``` r
+
 # system.file returns the directory with example data inside the r5r package
 # set data path to directory containing your own data if not running this example
 data_path <- system.file("extdata/poa", package = "r5r")
@@ -65,30 +54,21 @@ r5r_network <- build_network(data_path)
 
 ## 3. Accessibility: quick and easy approach
 
-There are different types of accessibility metrics. One of the simplest
-ones is the cumulative-opportunity metric, which counts the number of
-opportunities accessible from each location considering a maximum travel
-time cutoff. This is what we’ll be calculating in this vignette using
-the parameter `decay_function = "step"`.
+One of the simplest accessibility metrics is the cumulative-opportunity
+metric: the number of opportunities reachable within a travel time
+cutoff (`decay_function = "step"`).
 
-In this example, we will be calculating the number of schools and public
-healthcare facilities accessible by public transport within a travel
-time of up to 20 minutes. The sample data provided contains information
-on the spatial distribution of schools in Porto Alegre in the
-`points$schools` column, and healthcare facilities in the
-`points$healthcare` column.
-
-With the code below we compute the number of schools and healthcare
-accessible considering median of multiple travel time estimates
-departing every minute over a 60-minute time window, between 2pm and
-3pm. The
-[`accessibility()`](https://ipeagit.github.io/r5r/dev/reference/accessibility.md)
-function can calculate access to multiple opportunities in a single
-call, which is much more efficient and convenient than producing a
-travel time matrix of the study area and manually computing
-accessibility.
+Here we count the schools (`points$schools`) and public healthcare
+facilities (`points$healthcare`) reachable by public transport in less
+than 20 minutes, using the median travel time of departures every minute
+over a 60-minute window (2pm to 3pm).
+[`accessibility()`](https://ipea.github.io/r5r/dev/reference/accessibility.md)
+handles several opportunity types in one call, which is much more
+efficient than computing a travel time matrix and aggregating it
+yourself.
 
 ``` r
+
 # read all points in the city
 points <- fread(file.path(data_path, "poa_hexgrid.csv"))
 
@@ -118,35 +98,31 @@ access1 <- r5r::accessibility(
 head(access1)
 #>                 id opportunity percentile cutoff accessibility
 #>             <char>      <char>      <int>  <int>         <num>
-#> 1: 89a901291abffff     schools         50     20             4
-#> 2: 89a901291abffff  healthcare         50     20             6
+#> 1: 89a901291abffff     schools         50     20             3
+#> 2: 89a901291abffff  healthcare         50     20             5
 #> 3: 89a9012a3cfffff     schools         50     20             0
 #> 4: 89a9012a3cfffff  healthcare         50     20             0
-#> 5: 89a901295b7ffff     schools         50     20             8
+#> 5: 89a901295b7ffff     schools         50     20             6
 #> 6: 89a901295b7ffff  healthcare         50     20             4
 ```
 
-Mind you that the
-[`r5r::accessibility()`](https://ipeagit.github.io/r5r/dev/reference/accessibility.md)
-also allow users to calculate gravity-based accessibility metrics, which
-can be calculated by setting the `decay_function` to one of the
-following: `"exponential"` `"fixed_exponential"`, `"linear"` or
-`"logistic"`. Nonetheless, there are several other types of
-accessibility metrics not implemented in R5, including floating
-catchment area metrics, travel cost to closest N opportunities, time
-interval based cumulative opportunity, etc. This is where the
-[accessibility](https://github.com/ipeaGIT/accessibility) package comes
-in.
+[`r5r::accessibility()`](https://ipea.github.io/r5r/dev/reference/accessibility.md)
+also computes gravity-based metrics: set `decay_function` to
+`"exponential"`, `"fixed_exponential"`, `"linear"` or `"logistic"`.
+Metrics not implemented in R5, such as floating catchment area, travel
+cost to the closest N opportunities or time-interval cumulative
+opportunities, are available in the
+[accessibility](https://github.com/ipeaGIT/accessibility) package.
 
 ## 4. Accessibility: flexible approach
 
 The [accessibility](https://github.com/ipeaGIT/accessibility) package
-provides a much more flexible approach to calculate accessibility
-estimates. A key input here is a [travel time
-matrix](https://ipeagit.github.io/r5r/articles/travel_time_matrix.html),
-which we calculate using `r5r`:
+takes a [travel time
+matrix](https://ipea.github.io/r5r/articles/travel_time_matrix.html),
+which we compute with `r5r`:
 
 ``` r
+
 # calculate travel time matrix
 ttm <- r5r::travel_time_matrix(
   r5r_network,
@@ -162,7 +138,7 @@ ttm <- r5r::travel_time_matrix(
 head(ttm)
 #>            from_id           to_id travel_time_p50
 #>             <char>          <char>           <int>
-#> 1: 89a901291abffff 89a901291abffff               1
+#> 1: 89a901291abffff 89a901291abffff               2
 #> 2: 89a901291abffff 89a9012a3cfffff              78
 #> 3: 89a901291abffff 89a901295b7ffff              45
 #> 4: 89a901291abffff 89a901284a3ffff              60
@@ -170,12 +146,15 @@ head(ttm)
 #> 6: 89a901291abffff 89a901285cfffff              38
 ```
 
-Now to calculate a traditional cumulative opportunity metric like we did
-above, we just need to call the
-[`accessibility::cumulative_cutoff()`](https://ipeagit.github.io/accessibility/reference/cumulative_cutoff.html)
-function, and pass our travel time matrix and land use data as input:
+[`accessibility::cumulative_cutoff()`](https://rdrr.io/pkg/accessibility/man/cumulative_cutoff.html)
+computes the same cumulative metric from the travel time matrix and land
+use data. It also counts trips that take exactly the cutoff time, while
+[`r5r::accessibility()`](https://ipea.github.io/r5r/dev/reference/accessibility.md)
+counts only trips strictly shorter than it, so the two estimates can
+differ slightly:
 
 ``` r
+
 # calculate accessibility
 access_edu <- accessibility::cumulative_cutoff(
   travel_matrix = ttm, 
@@ -196,39 +175,39 @@ access_health <- accessibility::cumulative_cutoff(
 #> in the final output.
 
 head(access_edu)
+#> Key: <id>
 #>                 id schools
 #>             <char>   <int>
-#> 1: 89a9012124fffff       2
+#> 1: 89a9012124fffff       1
 #> 2: 89a9012126bffff       4
 #> 3: 89a9012127bffff       2
-#> 4: 89a90128003ffff       9
-#> 5: 89a90128007ffff       7
-#> 6: 89a9012800bffff       9
+#> 4: 89a90128003ffff       8
+#> 5: 89a90128007ffff       5
+#> 6: 89a9012800bffff       8
 head(access_health)
+#> Key: <id>
 #>                 id healthcare
 #>             <char>      <int>
-#> 1: 89a9012124fffff          2
+#> 1: 89a9012124fffff          0
 #> 2: 89a9012126bffff          1
 #> 3: 89a9012127bffff          1
 #> 4: 89a90128003ffff          3
-#> 5: 89a90128007ffff          2
-#> 6: 89a9012800bffff          4
+#> 5: 89a90128007ffff          1
+#> 6: 89a9012800bffff          3
 ```
 
 ## 5. Map Accessibility
 
-The final step is mapping the accessibility results calculated earlier.
-We can use at least two different approaches to map our accessibility
-estimates.
+Two ways to map the estimates:
 
 ### 5.1 Choropleth maps
 
-The first approach is to use choropleth maps. In our example, each point
-of reference is the centroid of a H3 hexagonal grid at a fine spatial
-resolution. In this case, we basically need to retrieve the polygons of
-the spatial grid, and merge it with our accessibility estimates.
+Each point is the centroid of a fine-resolution H3 hexagon, so we
+retrieve the hexagon polygons and join the accessibility estimates to
+them.
 
 ``` r
+
 # retrieve polygons of H3 spatial grid
 grid <- h3jsr::cell_to_polygon(points$id, simple = FALSE)
 
@@ -250,12 +229,11 @@ ggplot() +
 
 ### 5.2 Spatial interpolation
 
-An alternative approach is to use our accessibility estimates for each
-reference point and do some spatial interpolation so we can have a
-smoother spatial distribution. The code below demonstrates how to do
-that, producing a prettier map.
+Alternatively, interpolate the point estimates to get a smoother
+surface:
 
 ``` r
+
 # interpolate estimates to get spatially smooth result
 access_schools <- access1 %>% 
   filter(opportunity == "schools") %>%
@@ -301,22 +279,20 @@ ggplot(na.omit(access.interp)) +
 
 #### Cleaning up after usage
 
-`r5r` objects are still allocated to any amount of memory previously set
-after they are done with their calculations. In order to remove an
-existing `r5r` object and reallocate the memory it had been using, we
-use the `stop_r5` function followed by a call to Java’s garbage
-collector, as follows:
+Stop the network and run Java’s garbage collector to free the memory it
+used:
 
 ``` r
+
 r5r::stop_r5(r5r_network)
 rJava::.jgc(R.gc = TRUE)
 ```
 
 If you have any suggestions or want to report an error, please visit
-[the package GitHub page](https://github.com/ipeaGIT/r5r).
+[the package GitHub page](https://github.com/ipea/r5r).
 
 ### References
 
-Levinson, David, and et al. 2020. “Transport Access Manual: A Guide for
-Measuring Connection Between People and Places,” January.
+Levinson, David, and et al. 2020. *Transport Access Manual: A Guide for
+Measuring Connection Between People and Places*. January 1.
 <https://hdl.handle.net/2123/23733>.

@@ -22,11 +22,12 @@ The path to a `.shp` saved as a temporary file.
 ## See also
 
 Other Support functions:
-[`congestion_poly2geojson()`](https://ipeagit.github.io/r5r/dev/reference/congestion_poly2geojson.md)
+[`congestion_poly2geojson()`](https://ipea.github.io/r5r/dev/reference/congestion_poly2geojson.md)
 
 ## Examples
 
 ``` r
+
 # read lines with new speeds
 new_lts_lines <- readRDS(
   system.file("extdata/poa/poa_ls_lts.rds", package = "r5r")

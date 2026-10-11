@@ -19,18 +19,17 @@ that `r5r` depends on.
 
 ## Usage
 
-Please check the vignettes on the
-[website](https://ipeagit.github.io/r5r/).
+See the vignettes on the [website](https://ipea.github.io/r5r/).
 
 ## See also
 
 Useful links:
 
-- <https://github.com/ipeaGIT/r5r>
+- <https://github.com/ipea/r5r>
 
-- <https://ipeagit.github.io/r5r/>
+- <https://ipea.github.io/r5r/>
 
-- Report bugs at <https://github.com/ipeaGIT/r5r/issues>
+- Report bugs at <https://github.com/ipea/r5r/issues>
 
 ## Author
 
@@ -38,6 +37,9 @@ Useful links:
 ([ORCID](https://orcid.org/0000-0003-2125-7465))
 
 Authors:
+
+- Rafael H. M. Pereira <rafa.pereira.br@gmail.com>
+  ([ORCID](https://orcid.org/0000-0003-2125-7465))
 
 - Marcus Saraiva <marcus.saraiva@gmail.com>
   ([ORCID](https://orcid.org/0000-0001-6218-2338))
