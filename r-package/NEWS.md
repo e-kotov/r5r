@@ -44,6 +44,8 @@
 
 **Minor changes**
 
+- `check_transit_availability()` now discovers operating dates when no date arguments are supplied, including GTFS calendar exceptions. Street-only networks and empty explicit date vectors return a typed empty availability table. Date queries transfer availability counts in one Java batch, reducing transfer overhead.
+
 - Routing functions accept `random_seed` and `lock_schedules` with a seed-supporting custom R5 JAR, for reproducible Monte Carlo draws. Defaults preserve stock R5 behavior.
 
 
