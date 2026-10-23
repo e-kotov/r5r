@@ -44,6 +44,29 @@ window); without frequencies, departures are deterministic and
 `draws_per_minute` does not affect results. For the effect of the number
 of draws on result stability, see Stewart et al (2022).
 
+This holds for the default routing algorithm (FastRaptor). When a
+`fare_structure` is passed to
+[`travel_time_matrix()`](https://ipea.github.io/r5r/dev/reference/travel_time_matrix.md),
+[`accessibility()`](https://ipea.github.io/r5r/dev/reference/accessibility.md)
+or
+[`travel_time_surface()`](https://ipea.github.io/r5r/dev/reference/travel_time_surface.md),
+always in
+[`pareto_frontier()`](https://ipea.github.io/r5r/dev/reference/pareto_frontier.md),
+and in
+[`detailed_itineraries()`](https://ipea.github.io/r5r/dev/reference/detailed_itineraries.md)
+with `shortest_path = FALSE`, R⁵ uses the McRaptor algorithm instead.
+McRaptor does not route a departure every minute: it routes
+`time_window * draws_per_minute` departure times sampled at random
+within the window (consecutive departures are, on average,
+`1 / draws_per_minute` minutes apart, each origin gets its own departure
+times, and the same ones in every call with the same origin and `seed`).
+So with McRaptor, `draws_per_minute` affects results even if the GTFS
+feeds have no `frequencies.txt` table.
+[`pareto_frontier()`](https://ipea.github.io/r5r/dev/reference/pareto_frontier.md)
+and
+[`detailed_itineraries()`](https://ipea.github.io/r5r/dev/reference/detailed_itineraries.md)
+fix it at 1.
+
 The result is not a single estimate but a distribution reflecting the
 uncertainty within the window. The `percentiles` parameter selects which
 percentiles to return. For example, a 25th-percentile travel time of 15
@@ -118,9 +141,9 @@ head(acc, n = 10)
 #>  4: 89a8100c603ffff     schools         70     45             6
 #>  5: 89a8100c603ffff     schools         80     45             6
 #>  6: 89a8100c617ffff     schools         10     45            14
-#>  7: 89a8100c617ffff     schools         20     45            14
-#>  8: 89a8100c617ffff     schools         50     45            13
-#>  9: 89a8100c617ffff     schools         70     45             7
+#>  7: 89a8100c617ffff     schools         20     45            13
+#>  8: 89a8100c617ffff     schools         50     45            10
+#>  9: 89a8100c617ffff     schools         70     45             6
 #> 10: 89a8100c617ffff     schools         80     45             6
 ```
 
@@ -208,7 +231,8 @@ Each `travel_time_pXX` column gives the travel time within which XX% of
 the trips departing between 2pm and 3pm are completed: `travel_time_p10`
 for the fastest 10%, `travel_time_p50` the median, and so on. An `NA`
 means fewer than XX% of the trips arrive within `max_trip_duration` (90
-minutes).
+minutes). A wider `time_window` can include departures with worse
+service, so it can produce more `NA`s in the higher percentiles.
 
 ### 3.4 Expanded travel time matrix with `time_window`.
 
@@ -247,16 +271,16 @@ head(ettm, n = 10)
 #> 10: 89a8100c603ffff 89a8100c28bffff       14:01:00           5 4491-10
 #>     total_time
 #>          <num>
-#>  1:       43.1
-#>  2:       39.8
-#>  3:       48.0
-#>  4:       52.2
-#>  5:       53.7
-#>  6:       41.5
-#>  7:       42.5
-#>  8:       44.3
-#>  9:       53.7
-#> 10:       52.5
+#>  1:       34.8
+#>  2:       37.0
+#>  3:       43.8
+#>  4:       44.5
+#>  5:       52.8
+#>  6:       34.5
+#>  7:       36.5
+#>  8:       39.5
+#>  9:       47.1
+#> 10:       52.7
 ```
 
 ### 3.5 Detailed itineraries with `time_window`.
@@ -269,10 +293,15 @@ and arrive later than others (use `time_window = 1` for the earliest
 arrival). With `shortest_path = FALSE`, it also returns sub-optimal
 alternatives.
 
-Its number of draws per minute is fixed at 1: it simulates about one
-departure per minute of `time_window`, at random seconds (consecutive
-departures are 30 to 90 seconds apart, and the same departure times are
-used in every call with the same origin). So a 10-minute `time_window`
+With the default `shortest_path = TRUE` and no `fare_structure`, it
+routes one departure at each minute of `time_window`, as
+[`travel_time_matrix()`](https://ipea.github.io/r5r/dev/reference/travel_time_matrix.md)
+does with schedule-based GTFS; ties between equally fast itineraries go
+to the earliest departure.
+
+With `shortest_path = FALSE` or a `fare_structure`, it uses the McRaptor
+algorithm with one draw per minute (see Section 2): consecutive
+departures are 30 to 90 seconds apart, so a 10-minute `time_window`
 simulates about 10 departures. Each departure is routed separately, and
 with the default `suboptimal_minutes = 0` only the itineraries arriving
 earliest are kept for each departure, even if a slower one has fewer

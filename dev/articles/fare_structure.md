@@ -82,7 +82,6 @@ rail line connecting the city center to municipalities to the north:
 data_path <- system.file("extdata/poa", package = "r5r")
 
 r5r_network <- build_network(data_path)
-#> Using cached R5 version from /home/runner/.cache/R/r5r/r5_jar_v7.5.1/r5-v7.5-1-gf3631e9-all.jar
 #> ℹ Using cached network from
 #>   /home/runner/work/_temp/Library/r5r/extdata/poa/network.dat.
 
@@ -493,12 +492,12 @@ completed (`travel_time_500 == NA`):
 tail(ttm, 10)
 #>             from_id           to_id travel_time_500 travel_time_unl
 #>              <char>          <char>           <int>           <int>
-#>  1: 89a90166da7ffff 89a90129c2bffff              38              36
-#>  2: 89a90166da7ffff 89a90129aa7ffff              33              30
-#>  3: 89a90166da7ffff 89a90e93497ffff              33              33
-#>  4: 89a90166da7ffff 89a90129807ffff              39              38
-#>  5: 89a90166da7ffff 89a90129b5bffff              34              34
-#>  6: 89a90166da7ffff 89a90129dd7ffff              37              37
+#>  1: 89a90166da7ffff 89a90129863ffff              35              35
+#>  2: 89a90166da7ffff 89a90129c2bffff              38              38
+#>  3: 89a90166da7ffff 89a90129aa7ffff              33              30
+#>  4: 89a90166da7ffff 89a90e93497ffff              32              32
+#>  5: 89a90166da7ffff 89a90129807ffff              39              38
+#>  6: 89a90166da7ffff 89a90129b5bffff              34              34
 #>  7: 89a90166da7ffff 89a90129bbbffff              33              33
 #>  8: 89a90166da7ffff 89a90129bd7ffff              26              26
 #>  9: 89a90166da7ffff 89a90129a47ffff              19              19

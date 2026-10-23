@@ -14,6 +14,7 @@ pareto_frontier(
   mode_egress = "WALK",
   departure_datetime = Sys.time(),
   time_window = 10L,
+  seed = NULL,
   percentiles = 50L,
   max_walk_time = Inf,
   max_bike_time = Inf,
@@ -27,7 +28,7 @@ pareto_frontier(
   max_lts = 2,
   n_threads = Inf,
   verbose = FALSE,
-  progress = FALSE,
+  progress = TRUE,
   output_dir = NULL,
   r5r_core = deprecated()
 )
@@ -71,8 +72,30 @@ pareto_frontier(
   An integer. The time window in minutes. Departures are simulated every
   minute from `departure_datetime` until `time_window` minutes later,
   and travel times are summarized over these departures using
-  `percentiles` (the median by default). Defaults to 10. See
+  `percentiles` (the median by default). With a `fare_structure`, and
+  always in `pareto_frontier()`, departures are instead sampled at
+  random within the window: `draws_per_minute` per minute on average
+  (one in `pareto_frontier()`), different for each origin and the same
+  in every call from the same origin with the same `seed`. Defaults
+  to 10. See
   [`vignette("time_window", package = "r5r")`](https://ipea.github.io/r5r/dev/articles/time_window.md).
+
+- seed:
+
+  An integer or `NULL`. The seed of the Monte Carlo draws of the
+  departure offsets of frequency-based transit routes and, with the
+  McRaptor algorithm, of the departure times sampled within
+  `time_window`. Defaults to `NULL`, in which case the draws are random
+  and results may vary slightly between runs. With an integer, the same
+  inputs always give the same results, regardless of `n_threads`.
+  Results are still a Monte Carlo sample, so a different seed may give
+  slightly different results: report the seed used and check how
+  sensitive the results are to it. Note that
+  [`set.seed()`](https://rdrr.io/r/base/Random.html) has no effect on
+  these draws. With the default routing algorithm, this parameter only
+  affects the results when the GTFS feeds contain a `frequencies.txt`
+  table. This function always uses the McRaptor algorithm, so `seed`
+  affects the results with or without frequencies.
 
 - percentiles:
 
@@ -174,9 +197,8 @@ pareto_frontier(
 - progress:
 
   A logical. Whether to show a progress counter when running the router.
-  Defaults to `FALSE`. Only works when `verbose` is `FALSE`. May
-  slightly slow computation, as the counter is synchronized across
-  threads.
+  Defaults to `TRUE`. Only works when `verbose` is `FALSE`. May slightly
+  slow computation, as the counter is synchronized across threads.
 
 - output_dir:
 
@@ -265,10 +287,10 @@ perhaps surprisingly, ignoring the timezone attribute.
 
 ## Routing algorithm
 
-The
+The `pareto_frontier()` function, and
 [`detailed_itineraries()`](https://ipea.github.io/r5r/dev/reference/detailed_itineraries.md)
-and `pareto_frontier()` functions use an `R5`-specific extension to the
-McRAPTOR routing algorithm. The implementation used in
+with `shortest_path = FALSE` or a `fare_structure`, use an `R5`-specific
+extension to the McRAPTOR routing algorithm. The implementation used in
 [`detailed_itineraries()`](https://ipea.github.io/r5r/dev/reference/detailed_itineraries.md)
 allows the router to find paths that are optimal and less than optimal
 in terms of travel time, with some heuristics around multiple access
@@ -306,7 +328,6 @@ library(r5r)
 # build transport network
 data_path <- system.file("extdata/poa", package = "r5r")
 r5r_network <- build_network(data_path = data_path)
-#> Using cached R5 version from /home/runner/.cache/R/r5r/r5_jar_v7.5.1/r5-v7.5-1-gf3631e9-all.jar
 #> ℹ Using cached network from
 #>   /home/runner/work/_temp/Library/r5r/extdata/poa/network.dat.
 
@@ -339,11 +360,11 @@ head(pf)
 #>            from_id           to_id percentile travel_time monetary_cost
 #>             <char>          <char>      <int>       <int>         <num>
 #> 1: 89a901291abffff 89a901291abffff         50           2           4.5
-#> 2: 89a901291abffff 89a9012a3cfffff         50          73           9.0
+#> 2: 89a901291abffff 89a9012a3cfffff         50          72           9.0
 #> 3: 89a901291abffff 89a901295b7ffff         50          61           4.5
 #> 4: 89a901291abffff 89a901295b7ffff         50          55           4.8
-#> 5: 89a901291abffff 89a901295b7ffff         50          46           9.0
-#> 6: 89a901291abffff 89a901284a3ffff         50          61           4.8
+#> 5: 89a901291abffff 89a901295b7ffff         50          45           9.0
+#> 6: 89a901291abffff 89a901284a3ffff         50          59           4.8
 
 stop_r5(r5r_network)
 #> r5r_network has been successfully stopped.

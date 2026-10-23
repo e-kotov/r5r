@@ -82,9 +82,10 @@ containing travel times from a specified point.</p>
 <span>  carspeed_scale <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  new_lts <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  draws_per_minute <span class="op">=</span> <span class="fl">5L</span>,</span>
+<span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  n_threads <span class="op">=</span> <span class="cn">Inf</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  progress <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  progress <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -133,9 +134,10 @@ details for how datetimes are parsed.</p></dd>
 
 <dt id="arg-time-window">time_window<a class="anchor" aria-label="anchor" href="#arg-time-window"></a></dt>
 <dd><p>An integer. The time window in minutes for which <code>r5r</code>
-will calculate multiple travel time matrices departing each minute.
-Defaults to 10 minutes. The function returns the result based on
-median travel times. See
+will calculate multiple travel time matrices departing each minute
+(or, with a <code>fare_structure</code>, at departure times sampled at random
+within the window; see <code>draws_per_minute</code>). Defaults to 10 minutes.
+The function returns the result based on median travel times. See
 <code><a href="../articles/time_window.html">vignette("time_window", package = "r5r")</a></code>.</p></dd>
 
 
@@ -256,10 +258,32 @@ LINESTRING and update its LTS value accordingly.</p></dd>
 <dt id="arg-draws-per-minute">draws_per_minute<a class="anchor" aria-label="anchor" href="#arg-draws-per-minute"></a></dt>
 <dd><p>An integer. The number of Monte Carlo draws to
 perform per minute of <code>time_window</code>. Defaults to 5. This would mean 300
-draws in a 60-minute time window, for example. This parameter only affects
-the results when the GTFS feeds contain a <code>frequencies.txt</code> table. If the
-GTFS feed does not have a frequency table, r5r still allows for multiple
-runs over the set <code>time_window</code> but in a deterministic way.</p></dd>
+draws in a 60-minute time window, for example. With the default routing
+algorithm, this parameter only affects the results when the GTFS feeds
+contain a <code>frequencies.txt</code> table; otherwise, r5r still routes a departure
+every minute of <code>time_window</code>, in a deterministic way. In functions that
+accept a <code>fare_structure</code>, passing one switches to the McRaptor algorithm,
+which instead routes <code>time_window * draws_per_minute</code> departure times
+sampled at random within the window (different for each origin, and the
+same in every call from the same origin with the same <code>seed</code>). This
+parameter then affects the results with or without frequencies. R5's
+McRaptor cannot sample many departure times per minute over long windows,
+so such combinations raise an error (e.g. 8 draws per minute in a
+10-minute window, or 5 in a window of 150 minutes or more).</p></dd>
+
+
+<dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
+<dd><p>An integer or <code>NULL</code>. The seed of the Monte Carlo draws of the
+departure offsets of frequency-based transit routes and, with the McRaptor
+algorithm, of the departure times sampled within <code>time_window</code>. Defaults
+to <code>NULL</code>, in which case the draws are random and results may vary
+slightly between runs. With an integer, the same inputs always give the
+same results, regardless of <code>n_threads</code>. Results are still a Monte Carlo
+sample, so a different seed may give slightly different results: report
+the seed used and check how sensitive the results are to it. Note that
+<code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> has no effect on these draws. With the default routing
+algorithm, this parameter only affects the results when the GTFS feeds
+contain a <code>frequencies.txt</code> table. In functions that accept a <code>fare_structure</code>, passing one switches to the McRaptor algorithm, and <code>seed</code> then affects the results with or without frequencies.</p></dd>
 
 
 <dt id="arg-n-threads">n_threads<a class="anchor" aria-label="anchor" href="#arg-n-threads"></a></dt>
@@ -276,7 +300,7 @@ caught by <code>r5r</code>.</p></dd>
 
 <dt id="arg-progress">progress<a class="anchor" aria-label="anchor" href="#arg-progress"></a></dt>
 <dd><p>A logical. Whether to show a progress counter when running
-the router. Defaults to <code>FALSE</code>. Only works when <code>verbose</code> is set to
+the router. Defaults to <code>TRUE</code>. Only works when <code>verbose</code> is set to
 <code>FALSE</code>, so the progress counter does not interfere with <code>R5</code>'s output
 messages. Setting <code>progress</code> to <code>TRUE</code> may impose a small penalty for
 computation efficiency, because the progress counter must be
@@ -355,7 +379,9 @@ minute over the time window set by the user in the 'time_window' parameter.
 A detailed description of base RAPTOR can be found in Delling et al (2015).
 However, whenever the user includes transit fares inputs to these functions,
 they automatically switch to use an <code>R5</code>-specific extension to the McRAPTOR
-routing algorithm.</p><ul><li><p>Conway, M. W., Byrd, A., &amp; van der Linden, M. (2017). Evidence-based
+routing algorithm. <code><a href="detailed_itineraries.html">detailed_itineraries()</a></code> also uses RAPTOR when it only
+returns the fastest itinerary (<code>shortest_path = TRUE</code>) and no fares are
+used.</p><ul><li><p>Conway, M. W., Byrd, A., &amp; van der Linden, M. (2017). Evidence-based
 transit and land use sketch planning using interactive accessibility methods
 on combined schedule and headway-based networks. Transportation Research
 Record, 2653(1), 45-53. <a href="https://doi.org/10.3141/2653-06" class="external-link">doi:10.3141/2653-06</a></p></li>

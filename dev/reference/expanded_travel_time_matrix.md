@@ -31,9 +31,10 @@ expanded_travel_time_matrix(
   carspeed_scale = 1,
   new_lts = NULL,
   draws_per_minute = 5L,
+  seed = NULL,
   n_threads = Inf,
   verbose = FALSE,
-  progress = FALSE,
+  progress = TRUE,
   output_dir = NULL,
   r5r_core = deprecated()
 )
@@ -177,10 +178,37 @@ expanded_travel_time_matrix(
 
   An integer. The number of Monte Carlo draws to perform per minute of
   `time_window`. Defaults to 5. This would mean 300 draws in a 60-minute
-  time window, for example. This parameter only affects the results when
-  the GTFS feeds contain a `frequencies.txt` table. If the GTFS feed
-  does not have a frequency table, r5r still allows for multiple runs
-  over the set `time_window` but in a deterministic way.
+  time window, for example. With the default routing algorithm, this
+  parameter only affects the results when the GTFS feeds contain a
+  `frequencies.txt` table; otherwise, r5r still routes a departure every
+  minute of `time_window`, in a deterministic way. In functions that
+  accept a `fare_structure`, passing one switches to the McRaptor
+  algorithm, which instead routes `time_window * draws_per_minute`
+  departure times sampled at random within the window (different for
+  each origin, and the same in every call from the same origin with the
+  same `seed`). This parameter then affects the results with or without
+  frequencies. R5's McRaptor cannot sample many departure times per
+  minute over long windows, so such combinations raise an error (e.g. 8
+  draws per minute in a 10-minute window, or 5 in a window of 150
+  minutes or more).
+
+- seed:
+
+  An integer or `NULL`. The seed of the Monte Carlo draws of the
+  departure offsets of frequency-based transit routes and, with the
+  McRaptor algorithm, of the departure times sampled within
+  `time_window`. Defaults to `NULL`, in which case the draws are random
+  and results may vary slightly between runs. With an integer, the same
+  inputs always give the same results, regardless of `n_threads`.
+  Results are still a Monte Carlo sample, so a different seed may give
+  slightly different results: report the seed used and check how
+  sensitive the results are to it. Note that
+  [`set.seed()`](https://rdrr.io/r/base/Random.html) has no effect on
+  these draws. With the default routing algorithm, this parameter only
+  affects the results when the GTFS feeds contain a `frequencies.txt`
+  table. In functions that accept a `fare_structure`, passing one
+  switches to the McRaptor algorithm, and `seed` then affects the
+  results with or without frequencies.
 
 - n_threads:
 
@@ -197,9 +225,8 @@ expanded_travel_time_matrix(
 - progress:
 
   A logical. Whether to show a progress counter when running the router.
-  Defaults to `FALSE`. Only works when `verbose` is `FALSE`. May
-  slightly slow computation, as the counter is synchronized across
-  threads.
+  Defaults to `TRUE`. Only works when `verbose` is `FALSE`. May slightly
+  slow computation, as the counter is synchronized across threads.
 
 - output_dir:
 
@@ -327,6 +354,9 @@ can be found in Delling et al (2015). However, whenever the user
 includes transit fares inputs to these functions, they automatically
 switch to use an `R5`-specific extension to the McRAPTOR routing
 algorithm.
+[`detailed_itineraries()`](https://ipea.github.io/r5r/dev/reference/detailed_itineraries.md)
+also uses RAPTOR when it only returns the fastest itinerary
+(`shortest_path = TRUE`) and no fares are used.
 
 - Conway, M. W., Byrd, A., & van der Linden, M. (2017). Evidence-based
   transit and land use sketch planning using interactive accessibility
@@ -354,7 +384,6 @@ library(r5r)
 # build transport network
 data_path <- system.file("extdata/poa", package = "r5r")
 r5r_network <- build_network(data_path)
-#> Using cached R5 version from /home/runner/.cache/R/r5r/r5_jar_v7.5.1/r5-v7.5-1-gf3631e9-all.jar
 #> ℹ Using cached network from
 #>   /home/runner/work/_temp/Library/r5r/extdata/poa/network.dat.
 

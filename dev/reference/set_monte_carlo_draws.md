@@ -5,7 +5,12 @@ Sets the number of Monte Carlo draws to be used by R5.
 ## Usage
 
 ``` r
-set_monte_carlo_draws(r5r_network, draws_per_minute, time_window)
+set_monte_carlo_draws(
+  r5r_network,
+  draws_per_minute,
+  time_window,
+  fare_structure = NULL
+)
 ```
 
 ## Arguments
@@ -22,6 +27,12 @@ set_monte_carlo_draws(r5r_network, draws_per_minute, time_window)
 - time_window:
 
   A number.
+
+- fare_structure:
+
+  A fare structure or `NULL`. When set, R5 uses the McRaptor algorithm,
+  and combinations of `draws_per_minute` and `time_window` that its
+  departure-time sampler cannot handle are rejected.
 
 ## Value
 
@@ -41,6 +52,7 @@ Other setting functions:
 [`set_max_fare()`](https://ipea.github.io/r5r/dev/reference/set_max_fare.md),
 [`set_max_lts()`](https://ipea.github.io/r5r/dev/reference/set_max_lts.md),
 [`set_max_rides()`](https://ipea.github.io/r5r/dev/reference/set_max_rides.md),
+[`set_monte_carlo_seed()`](https://ipea.github.io/r5r/dev/reference/set_monte_carlo_seed.md),
 [`set_n_threads()`](https://ipea.github.io/r5r/dev/reference/set_n_threads.md),
 [`set_new_congestion()`](https://ipea.github.io/r5r/dev/reference/set_new_congestion.md),
 [`set_new_lts()`](https://ipea.github.io/r5r/dev/reference/set_new_lts.md),
