@@ -19,6 +19,13 @@ import java.util.List;
 public final class EgressPath {
     private EgressPath() {}
 
+    /** Only this invalid-chain condition is recoverable by omitting one itinerary. */
+    public static final class InvalidOriginException extends IllegalArgumentException {
+        private InvalidOriginException() {
+            super("Egress path must descend from this router's point origin");
+        }
+    }
+
     public static StreetSegment build(StreetRouter router, StreetRouter.State state,
                                       LegMode mode, double destinationLat, double destinationLon) {
         StreetSegment segment = new StreetSegment();
@@ -40,7 +47,7 @@ public final class EgressPath {
         Split split = router.getOriginSplit();
         if (split == null || !((root.backEdge == split.edge && root.vertex == split.vertex0)
                 || (root.backEdge == split.edge + 1 && root.vertex == split.vertex1))) {
-            throw new IllegalArgumentException("Egress path must descend from this router's point origin");
+            throw new InvalidOriginException();
         }
         EdgeStore.Edge edge = router.streetLayer.edgeStore.getCursor(split.edge);
         Coordinate[] full = edge.getGeometry().getCoordinates();

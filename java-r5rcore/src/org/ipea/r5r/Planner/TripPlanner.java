@@ -184,11 +184,17 @@ public class TripPlanner {
         }
 
         // build street paths and geometries only for the trips that are returned
+        List<Trip> completedTrips = new ArrayList<>();
         for (Trip trip : tripList) {
-            trip.augment(accessRouter, egressRouter, transportNetwork, request, OSMLinkIds);
+            try {
+                trip.augment(accessRouter, egressRouter, transportNetwork, request, OSMLinkIds);
+                completedTrips.add(trip);
+            } catch (EgressPath.InvalidOriginException e) {
+                LOG.warn("Skipping itinerary from {} to {}: {}", fromId, toId, e.getMessage());
+            }
         }
 
-        return tripList;
+        return completedTrips;
     }
 
     // with all_to_all, a FastRaptor search and egress times shared with the other pairs of the same origin and
@@ -405,7 +411,8 @@ public class TripPlanner {
                 LOG.info("Added {} egress stops for mode {}",stops.size(), mode);
 
             } else {
-                LOG.warn("MODE:{}, Edge near the destination coordinate {} wasn't found. Routing didn't start!", mode, toId);
+                LOG.warn("No permitted street connection within the time limit at destination {}, {} for mode {}. Routing didn't start!",
+                        request.toLat, request.toLon, mode);
             }
         }
 
